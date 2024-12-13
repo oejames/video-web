@@ -20,6 +20,7 @@ function VideogrepApp() {
   const [activeTab, setActiveTab] = useState('search');
   const [exportedVideoPath, setExportedVideoPath] = useState('');
   // const [isLiveSearch, setIsLiveSearch] = useState(true);
+  
 
     // Function to check if one result contains another result
     const isResultContained = useCallback((result1, result2) => {
@@ -211,6 +212,7 @@ function VideogrepApp() {
       }
     } finally {
       setIsLoading(false);
+      setActiveTab('video')
     }
   };
 
@@ -382,9 +384,15 @@ function VideogrepApp() {
             </button>
             <button 
               onClick={() => setActiveTab('transcripts')}
-              className={`px-4 py-2 rounded ${activeTab === 'transcripts' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+              className={`px-4 py-2 mr-2 rounded ${activeTab === 'transcripts' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
             >
               Transcripts
+            </button>
+            <button 
+              onClick={() => setActiveTab('video')}
+              className={`px-4 py-2 rounded ${activeTab === 'video' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+            >
+              Finished Supercut
             </button>
           </div>
 
@@ -495,8 +503,25 @@ function VideogrepApp() {
               )}
             </div>
           )}
+
+
+      {exportedVideoPath && activeTab === 'video' && (
+         <div className="mt-4">
+         {/* <h2 className="text-xl font-semibold">Exported Video</h2> */}
+         <video 
+           controls 
+           className="w-full border p-2 rounded"
+           src={`${exportedVideoPath}`}
+         >
+           Your browser does not support the video tag.
+         </video>
+       </div>
+
+      )}
+
+          
         </div>
-        {exportedVideoPath && (
+        {/* {exportedVideoPath && (
   <div className="mt-4">
     <h2 className="text-xl font-semibold">Exported Video</h2>
     <video 
@@ -507,7 +532,7 @@ function VideogrepApp() {
       Your browser does not support the video tag.
     </video>
   </div>
-)}
+)} */}
 
       </div>
     </div>
