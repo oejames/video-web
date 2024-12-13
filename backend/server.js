@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
 
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -12,8 +13,11 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
+// Serve videos from the "backend" folder
+app.use('/videos', express.static(path.join(__dirname, 'backend')));
+
 // Serve static files from React app
-app.use(express.static(path.join(__dirname, '../frontend/build')));
+// app.use(express.static(path.join(__dirname, '../frontend/build')));
 
 
 // Configure multer for file uploads
@@ -65,80 +69,112 @@ import json
 import os
 import videogrep.transcribe as transcribe
 
-print("Python script started!", file=sys.stderr)
-print(f"Received files: {sys.argv}", file=sys.stderr)
+# Function to safely read transcript file
+def read_transcript_file(file_path):
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return None
+    except Exception as e:
+        print(f"Error reading transcript file {file_path}: {str(e)}", file=sys.stderr)
+        return None
 
+# Capture all print statements for debugging
+print("Python script started!", file=sys.stderr)
 files = ${JSON.stringify(files)}
-print(f"Parsed files: {files}", file=sys.stderr)
 results = {}
 
 for file in files:
-    print(f"Processing file: {file}", file=sys.stderr)
     try:
-        print(f"Attempting transcription for: {file}", file=sys.stderr)
-        transcribe.transcribe(file)
-        print(f"Transcription successful for: {file}", file=sys.stderr)
+        print(f"Processing file: {file}", file=sys.stderr)
         
-        # Read the generated transcript file
+        # Generate transcript if not already exists
         transcript_file = file.rsplit('.', 1)[0] + '.json'
-        print(f"Looking for transcript file: {transcript_file}", file=sys.stderr)
         
-        if os.path.exists(transcript_file):
-            print(f"Transcript file found: {transcript_file}", file=sys.stderr)
-            with open(transcript_file, 'r', encoding='utf-8') as f:
-                content = f.read()
-                print(f"Transcript content length: {len(content)}", file=sys.stderr)
-                results[file] = content
+        # If transcript doesn't exist, generate it
+        if not os.path.exists(transcript_file):
+            print(f"Generating transcript for {file}", file=sys.stderr)
+            transcribe.transcribe(file)
+        
+        # Read the transcript
+        transcript_content = read_transcript_file(transcript_file)
+        
+        if transcript_content is not None:
+            results[file] = transcript_content
         else:
-            print(f"Transcript file NOT found: {transcript_file}", file=sys.stderr)
-            results[file] = f"Error: Transcript file not found at {transcript_file}"
+            results[file] = f"Error: Could not read transcript file {transcript_file}"
     except Exception as e:
-        print(f"Exception occurred: {str(e)}", file=sys.stderr)
+        print(f"Error processing {file}: {str(e)}", file=sys.stderr)
         results[file] = str(e)
 
-print("Printing JSON results", file=sys.stderr)
+# Ensure clean JSON output
 print(json.dumps(results))
-print("Script completed!", file=sys.stderr)
+sys.stdout.flush()
     `
     ]);
     
-    console.log('Spawned transcription process');
-    
     let resultData = '';
+    let errorOutput = '';
+    
     transcribeProcess.stdout.on('data', (data) => {
         console.log('Stdout data received:', data.toString());
-        resultData += data;
+        resultData += data.toString();
     });
     
     transcribeProcess.stderr.on('data', (data) => {
-        console.error('Transcribe stderr:', data.toString());
+        const errorStr = data.toString();
+        console.error('Transcribe stderr:', errorStr);
+        errorOutput += errorStr;
     });
     
     transcribeProcess.on('close', (code) => {
         console.log('Transcription process closed with code:', code);
-        console.log("Full transcription result:", resultData);
         
         if (code === 0) {
             try {
-                console.log('Attempting to parse result data');
-                const transcripts = JSON.parse(resultData);
+                // Trim and clean the result data
+                const cleanedData = resultData.trim()
+                    .split('\n')
+                    .filter(line => line.startsWith('{'))
+                    .join('\n');
+                
+                console.log('Cleaned result data:', cleanedData);
+                
+                const transcripts = JSON.parse(cleanedData);
+                
                 console.log('Parsed transcripts:', transcripts);
                 res.json(transcripts);
             } catch (error) {
                 console.error('Parsing error:', error);
                 console.error('Raw result data:', resultData);
+                console.error('Error output:', errorOutput);
                 res.status(500).json({ 
                     error: 'Failed to parse transcription results', 
-                    details: resultData 
+                    details: {
+                        parseError: error.message,
+                        rawData: resultData,
+                        errorOutput: errorOutput
+                    }
                 });
             }
         } else {
             console.error('Transcription process failed');
-            res.status(500).json({ error: 'Transcription failed' });
+            res.status(500).json({ 
+                error: 'Transcription failed', 
+                details: errorOutput 
+            });
         }
     });
-});
 
+    transcribeProcess.on('error', (err) => {
+        console.error('Spawn process error:', err);
+        res.status(500).json({ 
+            error: 'Failed to start transcription process',
+            details: err.message
+        });
+    });
+});
 
 app.post('/search', (req, res) => {
     const { files, query, searchType } = req.body;
@@ -235,44 +271,146 @@ ngramProcess.on('close', (code) => {
 
 
 app.post('/export', (req, res) => {
-  const { files, query, searchType, padding, resync, output } = req.body;
-  console.log('Export route hit. Files:', files, 'Query:', query, 'Search type:', searchType);
-
-  // Export process to create supercut
-  const exportProcess = spawn('python', [
-    '-m', 'videogrep.videogrep',
-    '--input', ...files,
-    '--query', query,
-    '--search-type', searchType,
-    '--output', output,
-    '--padding', padding.toString(),
-    '--resync', resync.toString()
-  ]);
-
-  exportProcess.stdout.on('data', (data) => {
-    console.log(`Export output: ${data}`);
-  });
-
-  exportProcess.stderr.on('data', (data) => {
-    console.error(`Export error: ${data}`);
-  });
-
-  exportProcess.on('close', (code) => {
-    if (code === 0) {
-      console.log('Export completed successfully');
-      res.json({ success: true, output });
+    console.log('Received request at /export endpoint');
+    const { files, query, searchType, padding, resync, output } = req.body;
+    console.log('Request body:', req.body);
+  
+    // Validate required parameters
+    if (!files || !files.length) {
+      console.error('Validation failed: No files provided');
+      return res.status(400).json({ success: false, message: 'No files provided' });
+    }
+  
+    if (!query) {
+      console.error('Validation failed: No search query provided');
+      return res.status(400).json({ success: false, message: 'No search query provided' });
+    }
+  
+    // Determine output path
+    const outputPath = output || path.join(__dirname, 'exports', `supercut_${Date.now()}.mp4`);
+    console.log('Output path determined:', outputPath);
+  
+    // Ensure exports directory exists
+    const exportsDir = path.dirname(outputPath);
+    if (!fs.existsSync(exportsDir)) {
+      console.log('Exports directory does not exist. Creating:', exportsDir);
+      try {
+        fs.mkdirSync(exportsDir, { recursive: true });
+        console.log('Exports directory created successfully');
+      } catch (err) {
+        console.error('Failed to create exports directory:', err);
+        return res.status(500).json({ success: false, message: 'Failed to create exports directory', error: err.message });
+      }
     } else {
-      console.error('Export failed');
-      res.status(500).json({ success: false, message: 'Export failed' });
+      console.log('Exports directory exists:', exportsDir);
+    }
+  
+    // Start export process
+    console.log('Starting export process with parameters:', {
+      input: files,
+      query,
+      searchType: searchType || 'word',
+      output: outputPath,
+      padding: padding || 0,
+      resync: resync || 0
+    });
+  
+    // Spawn Python process to call videogrep for export
+    const exportProcess = spawn('python', [
+      '-c',
+      `
+import sys
+import json
+import videogrep
+
+files = ${JSON.stringify(files)}
+query = ${JSON.stringify(query)}
+search_type = ${JSON.stringify(searchType || 'word')}
+output = ${JSON.stringify(outputPath)}
+padding = ${JSON.stringify(padding || 0)}
+resync = ${JSON.stringify(resync || 0)}
+
+try:
+    print("Starting export process...", file=sys.stderr)
+    videogrep.videogrep(files=files, query=query, search_type=search_type, output=output, padding=padding, resync=resync)
+    print("Export process completed successfully!", file=sys.stderr)
+except Exception as e:
+    print(f"Error during export process: {str(e)}", file=sys.stderr)
+    sys.exit(1)
+`
+    ], {
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+  
+    let errorOutput = '';
+    exportProcess.stdout.on('data', (data) => {
+      console.log(`Export process stdout: ${data.toString()}`);
+    });
+  
+    exportProcess.stderr.on('data', (data) => {
+      console.error(`Export process stderr: ${data.toString()}`);
+      errorOutput += data.toString();
+    });
+  
+    exportProcess.on('close', (code) => {
+      console.log(`Export process closed with code: ${code}`);
+      if (code === 0) {
+        console.log('Export process completed successfully');
+        res.json({ 
+          success: true, 
+          output: outputPath,
+          message: 'Supercut created successfully' 
+        });
+      } else {
+        console.error('Export process failed with errors');
+        res.status(500).json({ 
+          success: false, 
+          message: 'Export failed',
+          error: errorOutput,
+          code: code
+        });
+      }
+    });
+  
+    exportProcess.on('error', (err) => {
+      console.error('Spawn process encountered an error:', err);
+      res.status(500).json({ 
+        success: false, 
+        message: 'Failed to start export process',
+        error: err.message
+      });
+    });
+  
+    console.log('Export process initiated');
+  });
+
+  app.get('/test-video', (req, res) => {
+    // Adjust to the correct relative path
+    const videoPath = path.join(__dirname, 'supercut.mp4'); 
+    console.log(`Serving test video: ${videoPath}`);
+  
+    // Check if the file exists
+    if (fs.existsSync(videoPath)) {
+      res.sendFile(videoPath);
+    } else {
+      res.status(404).send('Video not found');
     }
   });
-});
+  
 
+  // Middleware for serving static files (like exported videos)
+// app.use('/exports', express.static(path.join(__dirname, 'exports')));
+
+
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
 // Serve static files from React app
 const frontendBuildPath = path.join(__dirname, '../frontend/build');
 console.log('Frontend build path:', frontendBuildPath);
-
 app.use(express.static(frontendBuildPath));
 
 // At the end of your server.js, add this route AFTER all other routes
@@ -280,7 +418,3 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
   });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
