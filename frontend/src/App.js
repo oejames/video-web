@@ -145,6 +145,9 @@ function VideogrepApp() {
   };
 
 const handleExport = async () => {
+    // Reset exported video path to null or an empty string
+    setExportedVideoPath('');
+    
   if (videos.length === 0 || editableResults.length === 0) {
     console.error("No videos or search results provided.");
     return;
