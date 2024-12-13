@@ -169,7 +169,7 @@ const handleExport = async () => {
     });
 
     alert(`Exported to ${response.data.output}`);
-    setExportedVideoPath(`${API_URL}/test-video`);
+    setExportedVideoPath(`${API_URL}/test-video?ts=${Date.now()}`);
   } catch (error) {
     console.error('Export failed:', error.response || error.message);
     if (error.response) {
