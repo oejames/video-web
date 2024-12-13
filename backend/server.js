@@ -268,6 +268,11 @@ app.post('/export', (req, res) => {
   });
 });
 
+// At the end of your server.js, add this route AFTER all other routes
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
+  });
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
