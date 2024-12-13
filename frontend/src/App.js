@@ -168,7 +168,7 @@ function VideogrepApp() {
         resync: resync / 1000
       });
   
-      alert(`Exported to ${response.data.output}`);
+      // alert(`Exported to ${response.data.output}`);
       
       // Update to use the unique filename returned from the server
       setExportedVideoPath(`${API_URL}/test-video?filename=${encodeURIComponent(response.data.output)}`);
