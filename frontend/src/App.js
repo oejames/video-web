@@ -144,41 +144,43 @@ function VideogrepApp() {
     }
   };
 
-const handleExport = async () => {
+  const handleExport = async () => {
     // Reset exported video path to null or an empty string
     setExportedVideoPath('');
     
-  if (videos.length === 0 || editableResults.length === 0) {
-    console.error("No videos or search results provided.");
-    return;
-  }
-
-  const exportQuery = editableResults
-    .map(result => result.content.trim())
-    .join('|');
-
-  try {
-    setIsLoading(true);
-    const response = await axios.post(`${API_URL}/export`, {
-      files: videos,
-      query: exportQuery,
-      searchType: searchType.toLowerCase() === 'sentences' ? 'sentence' : 'fragment',
-      padding: padding / 1000,
-      resync: resync / 1000,
-      output: 'supercut.mp4'
-    });
-
-    alert(`Exported to ${response.data.output}`);
-    setExportedVideoPath(`${API_URL}/test-video?ts=${Date.now()}`);
-  } catch (error) {
-    console.error('Export failed:', error.response || error.message);
-    if (error.response) {
-      console.error('Response data:', error.response.data);
+    if (videos.length === 0 || editableResults.length === 0) {
+      console.error("No videos or search results provided.");
+      return;
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  
+    const exportQuery = editableResults
+      .map(result => result.content.trim())
+      .join('|');
+  
+    try {
+      setIsLoading(true);
+      const response = await axios.post(`${API_URL}/export`, {
+        files: videos,
+        query: exportQuery,
+        searchType: searchType.toLowerCase() === 'sentences' ? 'sentence' : 'fragment',
+        padding: padding / 1000,
+        resync: resync / 1000
+      });
+  
+      alert(`Exported to ${response.data.output}`);
+      
+      // Update to use the unique filename returned from the server
+      setExportedVideoPath(`${API_URL}/test-video?filename=${encodeURIComponent(response.data.output)}`);
+  
+    } catch (error) {
+      console.error('Export failed:', error.response || error.message);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
 
 

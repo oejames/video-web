@@ -287,7 +287,10 @@ app.post('/export', (req, res) => {
     }
   
     // Determine output path
-    const outputPath = output || path.join(__dirname, 'exports', `supercut_${Date.now()}.mp4`);
+    // const outputPath = output || path.join(__dirname, 'exports', `supercut_${Date.now()}.mp4`);
+    
+    const uniqueFilename = `supercut_${Date.now()}.mp4`;
+    const outputPath = path.join(__dirname, 'exports', uniqueFilename);
     console.log('Output path determined:', outputPath);
   
     // Ensure exports directory exists
@@ -358,7 +361,7 @@ except Exception as e:
         console.log('Export process completed successfully');
         res.json({ 
           success: true, 
-          output: outputPath,
+          output: uniqueFilename,
           message: 'Supercut created successfully' 
         });
       } else {
@@ -385,9 +388,14 @@ except Exception as e:
   });
 
   app.get('/test-video', (req, res) => {
-    // Adjust to the correct relative path
-    const videoPath = path.join(__dirname, 'supercut.mp4'); 
-    console.log(`Serving test video: ${videoPath}`);
+    const { filename } = req.query;
+    
+    if (!filename) {
+      return res.status(400).send('Filename is required');
+    }
+  
+    const videoPath = path.join(__dirname, 'exports', filename); 
+    console.log(`Serving video: ${videoPath}`);
   
     // Check if the file exists
     if (fs.existsSync(videoPath)) {
