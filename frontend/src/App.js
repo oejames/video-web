@@ -15,6 +15,7 @@ function VideogrepApp() {
   const [editableResults, setEditableResults] = useState([]);
   const [nGrams, setNGrams] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [transcripts, setTranscripts] = useState({});
   const [activeTab, setActiveTab] = useState('search');
   const [exportedVideoPath, setExportedVideoPath] = useState('');
@@ -80,6 +81,7 @@ function VideogrepApp() {
 
     try {
       // setIsLoading(true);
+      setIsUploading(true); // Set to true when the upload starts
       const response = await axios.post(`${API_URL}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -92,6 +94,7 @@ function VideogrepApp() {
     } catch (error) {
       console.error('Upload failed', error);
     } finally {
+      setIsUploading(false); 
       // setIsLoading(false);
     }
   };
@@ -280,6 +283,9 @@ function VideogrepApp() {
             onChange={handleFileUpload} 
             className="mb-2"
           />
+           {isUploading && (
+    <div className="inline-block animate-spin rounded-full h-4 w-4 border-t-2 border-blue-500"></div>
+  )}
           
           <div className="mb-2">
             <strong>Uploaded Videos:</strong>
