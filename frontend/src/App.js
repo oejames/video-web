@@ -18,29 +18,57 @@ function VideogrepApp() {
   const [transcripts, setTranscripts] = useState({});
   const [activeTab, setActiveTab] = useState('search');
   const [exportedVideoPath, setExportedVideoPath] = useState('');
-  const [isLiveSearch, setIsLiveSearch] = useState(true);
+  // const [isLiveSearch, setIsLiveSearch] = useState(true);
 
-  // Flatten transcripts for live search
+    // Function to check if one result contains another result
+    const isResultContained = useCallback((result1, result2) => {
+      // Normalize the content by removing extra whitespace and converting to lowercase
+      const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
+      
+      const norm1 = normalize(result1.content);
+      const norm2 = normalize(result2.content);
+  
+      // Check if one result is a substring of another
+      return norm1.includes(norm2) || norm2.includes(norm1);
+    }, []);
+  
+    // Modified remove result function with containment check
+    const removeResult = useCallback((indexToRemove) => {
+      const currentResult = editableResults[indexToRemove];
+      
+      // Check if removing this result would impact other results
+      const containedResults = editableResults.filter((result, index) => 
+        index !== indexToRemove && isResultContained(currentResult, result)
+      );
+  
+      // If the result would impact other results, show a warning
+      if (containedResults.length > 0) {
+        const confirmed = window.confirm(
+          "Removing this result may affect other search results that contain similar words. " + 
+          `${containedResults.length} other result(s) will remain. Do you want to continue?`
+        );
+        
+        if (!confirmed) {
+          return;
+        }
+      }
+  
+      // Proceed with removal
+      const newResults = editableResults.filter((_, index) => index !== indexToRemove);
+      setEditableResults(newResults);
+    }, [editableResults, isResultContained]);
+
+  // Flatten transcripts for search
   const allTranscriptSegments = useMemo(() => {
     return Object.values(transcripts).flat();
   }, [transcripts]);
 
-  // Live search function
-  const liveSearchResults = useMemo(() => {
-    if (!searchQuery.trim()) return allTranscriptSegments;
-
-    const lowerQuery = searchQuery.toLowerCase();
-    return allTranscriptSegments.filter(segment => 
-      segment.content.toLowerCase().includes(lowerQuery)
-    );
-  }, [allTranscriptSegments, searchQuery]);
-
-    // Effect to set initial full transcript results when transcripts are loaded
-    useEffect(() => {
-      if (Object.keys(transcripts).length > 0) {
-        setEditableResults(allTranscriptSegments);
-      }
-    }, [transcripts, allTranscriptSegments]);
+  // Effect to set initial full transcript results when transcripts are loaded
+  useEffect(() => {
+    if (Object.keys(transcripts).length > 0) {
+      setEditableResults(allTranscriptSegments);
+    }
+  }, [transcripts, allTranscriptSegments]);
 
   const handleFileUpload = async (event) => {
     const files = event.target.files;
@@ -51,7 +79,7 @@ function VideogrepApp() {
     }
 
     try {
-      setIsLoading(true);
+      // setIsLoading(true);
       const response = await axios.post(`${API_URL}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
@@ -64,7 +92,7 @@ function VideogrepApp() {
     } catch (error) {
       console.error('Upload failed', error);
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
 
@@ -73,9 +101,9 @@ function VideogrepApp() {
       setIsLoading(true);
       const response = await axios.post(`${API_URL}/transcribe`, { files: videos });
       setTranscripts(response.data);
-      await handleNGrams(1);
       setActiveTab('transcripts');
-      alert('Transcription complete');
+      await handleNGrams(1);
+      // alert('Transcription complete');
     } catch (error) {
       console.error('Transcription failed', error);
     } finally {
@@ -97,7 +125,7 @@ function VideogrepApp() {
       setSearchResults(response.data);
       setEditableResults(response.data);
       setActiveTab('search');
-      setIsLiveSearch(false);
+      // setIsLiveSearch(false);
     } catch (error) {
       console.error('Search failed', error);
     } finally {
@@ -116,11 +144,11 @@ function VideogrepApp() {
     setEditableResults(newResults);
   }, [editableResults]);
 
-  // Function to remove a specific result
-  const removeResult = useCallback((indexToRemove) => {
-    const newResults = editableResults.filter((_, index) => index !== indexToRemove);
-    setEditableResults(newResults);
-  }, [editableResults]);
+  // // Function to remove a specific result
+  // const removeResult = useCallback((indexToRemove) => {
+  //   const newResults = editableResults.filter((_, index) => index !== indexToRemove);
+  //   setEditableResults(newResults);
+  // }, [editableResults]);
 
   const handleNGrams = async (n = 1) => {
     if (videos.length === 0) return;
@@ -137,7 +165,7 @@ function VideogrepApp() {
       );
       
       setNGrams(formattedNGrams);
-      setActiveTab('ngrams');
+      // setActiveTab('ngrams');
     } catch (error) {
       console.error('N-grams generation failed', error);
     } finally {
@@ -190,26 +218,57 @@ function VideogrepApp() {
     const query = e.target.value;
     setSearchQuery(query);
     
-    // If query is empty, reset to full transcript segments
+    // If query is empty, show full transcript
     if (!query.trim()) {
-      setIsLiveSearch(true);
       setEditableResults(allTranscriptSegments);
       return;
     }
-  
-    setIsLiveSearch(true);
-    setEditableResults(liveSearchResults);
+
+  };
+
+  const handleSearchTypeChange = async (newSearchType) => {
+    if (videos.length === 0 || !searchQuery.trim()) {
+      // If no videos or no query, just update the search type
+      setSearchType(newSearchType);
+      return;
+    }
+
+    // Set the new search type
+    setSearchType(newSearchType);
+
+    // Trigger a new search with the updated search type
+    try {
+      setIsLoading(true);
+      const response = await axios.post(`${API_URL}/search`, {
+        files: videos,
+        query: searchQuery,
+        searchType: newSearchType.toLowerCase() === 'sentences' ? 'sentence' : 'fragment'
+      });
+      
+      setSearchResults(response.data);
+      setEditableResults(response.data);
+      setActiveTab('search');
+    } catch (error) {
+      console.error('Search failed', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Videogrep Web</h1>
-
+    <div className="flex justify-between items-center mb-4 h-12"> {/* Fixed height here */}
+      <h1 className="text-2xl font-bold">Videogrep Web</h1>
       {isLoading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-white"></div>
+        <div className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center h-full">
+          <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-white mr-2"></div>
+          <span>Processing...</span>
         </div>
       )}
+    </div>
+  
+
+
 
       <div className="grid md:grid-cols-2 gap-4">
         <div className="border p-4 rounded">
@@ -250,7 +309,7 @@ function VideogrepApp() {
 
             <select 
               value={searchType}
-              onChange={(e) => setSearchType(e.target.value)}
+              onChange={(e) => handleSearchTypeChange(e.target.value)}
               className="border p-2 w-full mb-2"
             >
               <option>Sentences</option>
@@ -262,7 +321,7 @@ function VideogrepApp() {
               disabled={videos.length === 0 || !searchQuery.trim()}
               className="bg-green-500 text-white px-4 py-2 rounded disabled:opacity-50"
             >
-              {isLiveSearch ? 'Advanced Search' : 'Search'}
+              {'Search'}
             </button>
           </div>
 
@@ -323,50 +382,69 @@ function VideogrepApp() {
             </button>
           </div>
 
-          {activeTab === 'search' && (
-            <div>
-              <h2 className="text-xl font-semibold mb-2">Search Results</h2>
-              <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="search-results">
+
+ {activeTab === 'search' && (
+  <div>
+    <h2 className="text-xl font-semibold mb-2">Search Results</h2>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <Droppable droppableId="search-results">
+        {(provided) => (
+          <div 
+            {...provided.droppableProps} 
+            ref={provided.innerRef}
+            className="space-y-2"
+          >
+            {editableResults.map((result, index) => {
+              // Check if this result is contained in any other result
+              const containedResults = editableResults.filter((otherResult, otherIndex) => 
+                index !== otherIndex && isResultContained(result, otherResult)
+              );
+
+              return (
+                <Draggable 
+                  key={`${result.start}-${result.end}`} 
+                  draggableId={`${result.start}-${result.end}`} 
+                  index={index}
+                >
                   {(provided) => (
                     <div 
-                      {...provided.droppableProps} 
                       ref={provided.innerRef}
-                      className="space-y-2"
+                      {...provided.draggableProps}
+                      {...provided.dragHandleProps}
+                      className="flex items-center bg-gray-100 p-2 rounded"
                     >
-                      {editableResults.map((result, index) => (
-                        <Draggable 
-                          key={`${result.start}-${result.end}`} 
-                          draggableId={`${result.start}-${result.end}`} 
-                          index={index}
+                      <span className="flex-grow">
+                        {`${result.start.toFixed(2)} - ${result.end.toFixed(2)}: ${result.content}`}
+                      </span>
+                      {searchType === 'Sentences' && containedResults.length === 0 && (
+                        <button 
+                          onClick={() => removeResult(index)}
+                          className="ml-2 text-red-500 hover:text-red-700"
                         >
-                          {(provided) => (
-                            <div 
-                              ref={provided.innerRef}
-                              {...provided.draggableProps}
-                              {...provided.dragHandleProps}
-                              className="flex items-center bg-gray-100 p-2 rounded"
-                            >
-                              <span className="flex-grow">
-                                {`${result.start.toFixed(2)} - ${result.end.toFixed(2)}: ${result.content}`}
-                              </span>
-                              <button 
-                                onClick={() => removeResult(index)}
-                                className="ml-2 text-red-500 hover:text-red-700"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
+                          ✕
+                        </button>
+                      )}
+                      {/* {searchType === 'Sentences' && containedResults.length > 0 && (
+                        <span 
+                          className="ml-2 text-yellow-500"
+                          title={`This result is similar to ${containedResults.length} other result(s)`}
+                        >
+                          ⚠️
+                        </span>
+                      )} */}
                     </div>
                   )}
-                </Droppable>
-              </DragDropContext>
-            </div>
-          )}
+                </Draggable>
+              );
+            })}
+            {provided.placeholder}
+          </div>
+        )}
+      </Droppable>
+    </DragDropContext>
+  </div>
+)}
+
 
           {activeTab === 'ngrams' && (
             <div>
