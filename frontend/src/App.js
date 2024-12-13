@@ -41,7 +41,7 @@ function VideogrepApp() {
         index !== indexToRemove && isResultContained(currentResult, result)
       );
   
-      // If the result would impact other results, show a warning
+      // LIKELY REDUNDANT bc its not supposed to have an x anyway?// If the result would impact other results, show a warning
       if (containedResults.length > 0) {
         const confirmed = window.confirm(
           "Removing this result may affect other search results that contain similar words. " + 
@@ -177,14 +177,17 @@ function VideogrepApp() {
     // Reset exported video path to null or an empty string
     setExportedVideoPath('');
     
-    if (videos.length === 0 || editableResults.length === 0) {
-      console.error("No videos or search results provided.");
+    if (videos.length === 0) {
+      console.error("No videos provided.");
       return;
     }
   
-    const exportQuery = editableResults
-      .map(result => result.content.trim())
-      .join('|');
+    // Different query logic based on search type
+    const exportQuery = searchType === 'Words' 
+      ? searchQuery  // For words, use the original search query
+      : editableResults
+        .map(result => result.content.trim())
+        .join('|');  // For sentences, use the editable results
   
     try {
       setIsLoading(true);
@@ -196,9 +199,6 @@ function VideogrepApp() {
         resync: resync / 1000
       });
   
-      // alert(`Exported to ${response.data.output}`);
-      
-      // Update to use the unique filename returned from the server
       setExportedVideoPath(`${API_URL}/test-video?filename=${encodeURIComponent(response.data.output)}`);
   
     } catch (error) {
