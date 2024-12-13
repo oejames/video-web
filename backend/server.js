@@ -268,6 +268,13 @@ app.post('/export', (req, res) => {
   });
 });
 
+
+// Serve static files from React app
+const frontendBuildPath = path.join(__dirname, '../frontend/build');
+console.log('Frontend build path:', frontendBuildPath);
+
+app.use(express.static(frontendBuildPath));
+
 // At the end of your server.js, add this route AFTER all other routes
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/build/index.html'));
