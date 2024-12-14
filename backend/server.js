@@ -69,7 +69,7 @@ app.post('/transcribe', async (req, res) => {
       {
         attempts: 3,
         backoff: { type: 'exponential', delay: 1000 },
-        timeout: 5 * 60 * 1000, // 5-minute timeout
+        // timeout: 5 * 60 * 1000, // 5-minute timeout
       }
     );
 
