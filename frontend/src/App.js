@@ -126,7 +126,7 @@ function VideogrepApp() {
         searchType: searchType.toLowerCase() === 'sentences' ? 'sentence' : 'fragment'
       });
       
-      setSearchResults(response.data);
+      // setSearchResults(response.data);
       setEditableResults(response.data);
       setActiveTab('search');
       // setIsLiveSearch(false);
@@ -250,7 +250,7 @@ function VideogrepApp() {
         searchType: newSearchType.toLowerCase() === 'sentences' ? 'sentence' : 'fragment'
       });
       
-      setSearchResults(response.data);
+      // setSearchResults(response.data);
       setEditableResults(response.data);
       setActiveTab('search');
     } catch (error) {
