@@ -1,3 +1,4 @@
 videogrep
-torch
-transformers
+vosk
+# torch
+# transformers
