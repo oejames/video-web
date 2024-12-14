@@ -392,7 +392,7 @@ function VideogrepApp() {
               onClick={() => setActiveTab('video')}
               className={`px-4 py-2 rounded ${activeTab === 'video' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
             >
-              Finished Supercut
+              Finished Video
             </button>
           </div>
 
@@ -505,35 +505,26 @@ function VideogrepApp() {
           )}
 
 
-      {exportedVideoPath && activeTab === 'video' && (
-         <div className="mt-4">
-         {/* <h2 className="text-xl font-semibold">Exported Video</h2> */}
-         <video 
-           controls 
-           className="w-full border p-2 rounded"
-           src={`${exportedVideoPath}`}
-         >
-           Your browser does not support the video tag.
-         </video>
-       </div>
-
-      )}
+      {activeTab === 'video' && (
+        <div className='mt-4'>
+          {/* <h2 className='text-xl font-semibold mb-2'>Video</h2> */}
+          {exportedVideoPath ? (
+            <video 
+            controls 
+            ="w-full border p-2 rounded"
+            src={`${exportedVideoPath}`}
+          >
+            Your browser does not support the video tag.
+          </video>
+          ) : (
+            <p>Click 'export supercut' to see the finished video</p>
+          )}
+          </div>
+            
+          )}
 
           
         </div>
-        {/* {exportedVideoPath && (
-  <div className="mt-4">
-    <h2 className="text-xl font-semibold">Exported Video</h2>
-    <video 
-      controls 
-      className="w-full border p-2 rounded"
-      src={`${exportedVideoPath}`}
-    >
-      Your browser does not support the video tag.
-    </video>
-  </div>
-)} */}
-
       </div>
     </div>
   );
