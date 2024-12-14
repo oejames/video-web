@@ -4,7 +4,6 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
-const transcriptionQueue = require('jobQueue');
 
 
 const app = express();
@@ -53,7 +52,6 @@ app.post('/upload', upload.array('videos'), (req, res) => {
   console.log('Files uploaded:', files);
   res.json({ files });
 });
-
 
 app.post('/transcribe', (req, res) => {
     console.log('Transcribe route hit!');
