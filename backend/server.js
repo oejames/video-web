@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
+const transcriptionQueue = require('jobQueue');
 
 
 const app = express();
@@ -53,128 +54,181 @@ app.post('/upload', upload.array('videos'), (req, res) => {
   res.json({ files });
 });
 
-app.post('/transcribe', (req, res) => {
-    console.log('Transcribe route hit!');
-    console.log('Request body:', req.body);
-    
+
+
+// JOB QUEUE
+app.post('/transcribe', async (req, res) => {
+  try {
     const { files } = req.body;
-    console.log('Files to transcribe:', files);
     
-    // Spawn a Python child process to handle transcription
-    const transcribeProcess = spawn('python', [
-      '-c',
-      `
-import sys
-import json
-import os
-import videogrep.transcribe as transcribe
-
-# Function to safely read transcript file
-def read_transcript_file(file_path):
-    try:
-        if os.path.exists(file_path):
-            with open(file_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        return None
-    except Exception as e:
-        print(f"Error reading transcript file {file_path}: {str(e)}", file=sys.stderr)
-        return None
-
-# Capture all print statements for debugging
-print("Python script started!", file=sys.stderr)
-files = ${JSON.stringify(files)}
-results = {}
-
-for file in files:
-    try:
-        print(f"Processing file: {file}", file=sys.stderr)
-        
-        # Generate transcript if not already exists
-        transcript_file = file.rsplit('.', 1)[0] + '.json'
-        
-        # If transcript doesn't exist, generate it
-        if not os.path.exists(transcript_file):
-            print(f"Generating transcript for {file}", file=sys.stderr)
-            transcribe.transcribe(file)
-        
-        # Read the transcript
-        transcript_content = read_transcript_file(transcript_file)
-        
-        if transcript_content is not None:
-            results[file] = transcript_content
-        else:
-            results[file] = f"Error: Could not read transcript file {transcript_file}"
-    except Exception as e:
-        print(f"Error processing {file}: {str(e)}", file=sys.stderr)
-        results[file] = str(e)
-
-# Ensure clean JSON output
-print(json.dumps(results))
-sys.stdout.flush()
-    `
-    ]);
-    
-    let resultData = '';
-    let errorOutput = '';
-    
-    transcribeProcess.stdout.on('data', (data) => {
-        console.log('Stdout data received:', data.toString());
-        resultData += data.toString();
-    });
-    
-    transcribeProcess.stderr.on('data', (data) => {
-        const errorStr = data.toString();
-        console.error('Transcribe stderr:', errorStr);
-        errorOutput += errorStr;
-    });
-    
-    transcribeProcess.on('close', (code) => {
-        console.log('Transcription process closed with code:', code);
-        
-        if (code === 0) {
-            try {
-                // Trim and clean the result data
-                const cleanedData = resultData.trim()
-                    .split('\n')
-                    .filter(line => line.startsWith('{'))
-                    .join('\n');
-                
-                console.log('Cleaned result data:', cleanedData);
-                
-                const transcripts = JSON.parse(cleanedData);
-                
-                console.log('Parsed transcripts:', transcripts);
-                res.json(transcripts);
-            } catch (error) {
-                console.error('Parsing error:', error);
-                console.error('Raw result data:', resultData);
-                console.error('Error output:', errorOutput);
-                res.status(500).json({ 
-                    error: 'Failed to parse transcription results', 
-                    details: {
-                        parseError: error.message,
-                        rawData: resultData,
-                        errorOutput: errorOutput
-                    }
-                });
-            }
-        } else {
-            console.error('Transcription process failed');
-            res.status(500).json({ 
-                error: 'Transcription failed', 
-                details: errorOutput 
-            });
-        }
+    // Create a job in the queue
+    const job = await transcriptionQueue.add({ files }, {
+      // Optional job options
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 1000
+      },
+      timeout: 5 * 60 * 1000 // 5 minute timeout
     });
 
-    transcribeProcess.on('error', (err) => {
-        console.error('Spawn process error:', err);
-        res.status(500).json({ 
-            error: 'Failed to start transcription process',
-            details: err.message
-        });
+    // Immediately respond with job ID
+    res.json({ 
+      jobId: job.id, 
+      message: 'Transcription queued' 
     });
+  } catch (error) {
+    console.error('Queue error:', error);
+    res.status(500).json({ error: 'Failed to queue transcription' });
+  }
 });
+
+// New endpoint to check job status
+app.get('/transcription-status/:jobId', async (req, res) => {
+  try {
+    const job = await transcriptionQueue.getJob(req.params.jobId);
+    
+    if (!job) {
+      return res.status(404).json({ error: 'Job not found' });
+    }
+
+    const state = await job.getState();
+    
+    res.json({
+      jobId: job.id,
+      state,
+      result: job.returnvalue,
+      failed: state === 'failed',
+      progress: job.progress()
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve job status' });
+  }
+});
+
+// // OG BEFORE JOB QUEUE
+// app.post('/transcribe', (req, res) => {
+//     console.log('Transcribe route hit!');
+//     console.log('Request body:', req.body);
+    
+//     const { files } = req.body;
+//     console.log('Files to transcribe:', files);
+    
+//     // Spawn a Python child process to handle transcription
+//     const transcribeProcess = spawn('python', [
+//       '-c',
+//       `
+// import sys
+// import json
+// import os
+// import videogrep.transcribe as transcribe
+
+// # Function to safely read transcript file
+// def read_transcript_file(file_path):
+//     try:
+//         if os.path.exists(file_path):
+//             with open(file_path, 'r', encoding='utf-8') as f:
+//                 return json.load(f)
+//         return None
+//     except Exception as e:
+//         print(f"Error reading transcript file {file_path}: {str(e)}", file=sys.stderr)
+//         return None
+
+// # Capture all print statements for debugging
+// print("Python script started!", file=sys.stderr)
+// files = ${JSON.stringify(files)}
+// results = {}
+
+// for file in files:
+//     try:
+//         print(f"Processing file: {file}", file=sys.stderr)
+        
+//         # Generate transcript if not already exists
+//         transcript_file = file.rsplit('.', 1)[0] + '.json'
+        
+//         # If transcript doesn't exist, generate it
+//         if not os.path.exists(transcript_file):
+//             print(f"Generating transcript for {file}", file=sys.stderr)
+//             transcribe.transcribe(file)
+        
+//         # Read the transcript
+//         transcript_content = read_transcript_file(transcript_file)
+        
+//         if transcript_content is not None:
+//             results[file] = transcript_content
+//         else:
+//             results[file] = f"Error: Could not read transcript file {transcript_file}"
+//     except Exception as e:
+//         print(f"Error processing {file}: {str(e)}", file=sys.stderr)
+//         results[file] = str(e)
+
+// # Ensure clean JSON output
+// print(json.dumps(results))
+// sys.stdout.flush()
+//     `
+//     ]);
+    
+//     let resultData = '';
+//     let errorOutput = '';
+    
+//     transcribeProcess.stdout.on('data', (data) => {
+//         console.log('Stdout data received:', data.toString());
+//         resultData += data.toString();
+//     });
+    
+//     transcribeProcess.stderr.on('data', (data) => {
+//         const errorStr = data.toString();
+//         console.error('Transcribe stderr:', errorStr);
+//         errorOutput += errorStr;
+//     });
+    
+//     transcribeProcess.on('close', (code) => {
+//         console.log('Transcription process closed with code:', code);
+        
+//         if (code === 0) {
+//             try {
+//                 // Trim and clean the result data
+//                 const cleanedData = resultData.trim()
+//                     .split('\n')
+//                     .filter(line => line.startsWith('{'))
+//                     .join('\n');
+                
+//                 console.log('Cleaned result data:', cleanedData);
+                
+//                 const transcripts = JSON.parse(cleanedData);
+                
+//                 console.log('Parsed transcripts:', transcripts);
+//                 res.json(transcripts);
+//             } catch (error) {
+//                 console.error('Parsing error:', error);
+//                 console.error('Raw result data:', resultData);
+//                 console.error('Error output:', errorOutput);
+//                 res.status(500).json({ 
+//                     error: 'Failed to parse transcription results', 
+//                     details: {
+//                         parseError: error.message,
+//                         rawData: resultData,
+//                         errorOutput: errorOutput
+//                     }
+//                 });
+//             }
+//         } else {
+//             console.error('Transcription process failed');
+//             res.status(500).json({ 
+//                 error: 'Transcription failed', 
+//                 details: errorOutput 
+//             });
+//         }
+//     });
+
+//     transcribeProcess.on('error', (err) => {
+//         console.error('Spawn process error:', err);
+//         res.status(500).json({ 
+//             error: 'Failed to start transcription process',
+//             details: err.message
+//         });
+//     });
+// });
 
 app.post('/search', (req, res) => {
     const { files, query, searchType } = req.body;
