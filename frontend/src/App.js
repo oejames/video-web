@@ -100,56 +100,20 @@ function VideogrepApp() {
     }
   };
 
-//JOB QUEUE
-const checkTranscriptionStatus = async (jobId) => {
-  try {
-    const response = await axios.get(`/transcription-status/${jobId}`);
-    
-    if (response.data.state === 'completed') {
-      // Handle successful transcription
-      setTranscripts(response.data.result);
-    } else if (response.data.state === 'failed') {
-      // Handle failure
-      console.error('Transcription failed');
-    } else {
-      // Continue polling
-      setTimeout(() => checkTranscriptionStatus(jobId), 1000);
+  const handleTranscribe = async () => {
+    try {
+      setIsLoading(true);
+      const response = await axios.post(`${API_URL}/transcribe`, { files: videos });
+      setTranscripts(response.data);
+      setActiveTab('transcripts');
+      await handleNGrams(1);
+      // alert('Transcription complete');
+    } catch (error) {
+      console.error('Transcription failed', error);
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Status check failed', error);
-  }
-};
-
-const handleTranscribe = async () => {
-  console.log('[ACTION] handleTranscribe triggered');
-  try {
-    const response = await axios.post('/transcribe', { files: videos });
-    console.log(`[ACTION] Transcription request successful, job ID: ${response.data.jobId}`);
-
-    // Start polling for job status
-    checkTranscriptionStatus(response.data.jobId);
-  } catch (error) {
-    console.error('[ACTION] Transcription request failed:', error.message);
-  }
-};
-
-
-
-  // OG BEFORE JOB QUEUE
-  // const handleTranscribe = async () => {
-  //   try {
-  //     setIsLoading(true);
-  //     const response = await axios.post(`${API_URL}/transcribe`, { files: videos });
-  //     setTranscripts(response.data);
-  //     setActiveTab('transcripts');
-  //     await handleNGrams(1);
-  //     // alert('Transcription complete');
-  //   } catch (error) {
-  //     console.error('Transcription failed', error);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  };
 
   const handleSearch = async () => {
     if (videos.length === 0 || !searchQuery.trim()) return;
