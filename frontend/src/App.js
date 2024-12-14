@@ -121,13 +121,15 @@ const checkTranscriptionStatus = async (jobId) => {
 };
 
 const handleTranscribe = async () => {
+  console.log('[ACTION] handleTranscribe triggered');
   try {
     const response = await axios.post('/transcribe', { files: videos });
-    
+    console.log(`[ACTION] Transcription request successful, job ID: ${response.data.jobId}`);
+
     // Start polling for job status
     checkTranscriptionStatus(response.data.jobId);
   } catch (error) {
-    console.error('Transcription request failed', error);
+    console.error('[ACTION] Transcription request failed:', error.message);
   }
 };
 

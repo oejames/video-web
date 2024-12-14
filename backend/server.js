@@ -57,54 +57,57 @@ app.post('/upload', upload.array('videos'), (req, res) => {
 
 
 // JOB QUEUE
+// Endpoint to add job to queue
 app.post('/transcribe', async (req, res) => {
+  console.log('[ENDPOINT] /transcribe POST received');
   try {
     const { files } = req.body;
-    
-    // Create a job in the queue
-    const job = await transcriptionQueue.add({ files }, {
-      // Optional job options
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000
-      },
-      timeout: 5 * 60 * 1000 // 5 minute timeout
-    });
+    console.log(`[ENDPOINT] Received files: ${files}`);
 
-    // Immediately respond with job ID
-    res.json({ 
-      jobId: job.id, 
-      message: 'Transcription queued' 
-    });
+    const job = await transcriptionQueue.add(
+      { files },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+        timeout: 5 * 60 * 1000, // 5-minute timeout
+      }
+    );
+
+    console.log(`[QUEUE] Job added with ID: ${job.id}`);
+    res.json({ jobId: job.id, message: 'Transcription queued' });
   } catch (error) {
-    console.error('Queue error:', error);
+    console.error(`[ERROR] Failed to queue transcription: ${error.message}`);
     res.status(500).json({ error: 'Failed to queue transcription' });
   }
 });
 
-// New endpoint to check job status
+// Endpoint to check job status
 app.get('/transcription-status/:jobId', async (req, res) => {
+  console.log(`[ENDPOINT] /transcription-status GET received for job ID: ${req.params.jobId}`);
   try {
     const job = await transcriptionQueue.getJob(req.params.jobId);
-    
+
     if (!job) {
+      console.error('[STATUS] Job not found');
       return res.status(404).json({ error: 'Job not found' });
     }
 
     const state = await job.getState();
-    
+    console.log(`[STATUS] Job state: ${state}`);
+
     res.json({
       jobId: job.id,
       state,
       result: job.returnvalue,
       failed: state === 'failed',
-      progress: job.progress()
+      progress: job.progress(),
     });
   } catch (error) {
+    console.error(`[ERROR] Failed to retrieve job status: ${error.message}`);
     res.status(500).json({ error: 'Failed to retrieve job status' });
   }
 });
+
 
 // // OG BEFORE JOB QUEUE
 // app.post('/transcribe', (req, res) => {
