@@ -11,7 +11,7 @@ function VideogrepApp() {
   const [searchType, setSearchType] = useState('Sentences');
   const [padding, setPadding] = useState(0);
   const [resync, setResync] = useState(0);
-  const [searchResults, setSearchResults] = useState([]);
+  // const [searchResults, setSearchResults] = useState([]);
   const [editableResults, setEditableResults] = useState([]);
   const [nGrams, setNGrams] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
