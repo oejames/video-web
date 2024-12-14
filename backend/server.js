@@ -4,7 +4,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const cors = require('cors');
-const transcriptionQueue = require('./jobqueue');
+const transcriptionQueue = require('./jobQueue');
 
 
 const app = express();
