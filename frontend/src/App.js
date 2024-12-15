@@ -1,14 +1,14 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { 
   FaVideo, 
-  FaSearch, 
-  FaTrash, 
+  // FaSearch, 
+  // FaTrash, 
   FaFileUpload, 
   FaCut, 
-  FaListAlt, 
-  FaFilm, 
+  // FaListAlt, 
+  // FaFilm, 
   FaSpinner 
 } from 'react-icons/fa';
 
