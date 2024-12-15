@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback} from 'react';
 import axios from 'axios';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import { 
@@ -21,8 +21,8 @@ function VideogrepApp() {
   const [videos, setVideos] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchType, setSearchType] = useState('Sentences');
-  const [padding, setPadding] = useState(0);
-  const [resync, setResync] = useState(0);
+  const [padding] = useState(0);
+  const [resync] = useState(0);
   // const [searchResults, setSearchResults] = useState([]);
   const [editableResults, setEditableResults] = useState([]);
   const [nGrams, setNGrams] = useState([]);
@@ -73,9 +73,9 @@ function VideogrepApp() {
     }, [editableResults, isResultContained]);
 
   // Flatten transcripts for search
-  const allTranscriptSegments = useMemo(() => {
-    return Object.values(transcripts).flat();
-  }, [transcripts]);
+  // const allTranscriptSegments = useMemo(() => {
+  //   return Object.values(transcripts).flat();
+  // }, [transcripts]);
 
   // Effect to set initial full transcript results when transcripts are loaded
   // useEffect(() => {
