@@ -4,7 +4,7 @@ import VideoUpload from './components/VideoUpload';
 import SearchControls from './components/SearchControls';
 import Tabs from './components/Tabs';
 import TabContent from './components/TabContent';
-import { useVideoProcessing } from './hooks/videoProcessingHooks.js';
+import { useVideoProcessing } from './hooks/videoProcessingHooks';
 
 function VideogrepApp() {
   const {

@@ -1,13 +1,13 @@
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+// import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import {
-FaVideo,
+// FaVideo,
 // FaSearch,
 // FaTrash,
-FaFileUpload,
+// FaFileUpload,
 FaCut,
 // FaListAlt,
 // FaFilm,
-FaSpinner
+// FaSpinner
 } from 'react-icons/fa';
 
 // Search controls component  

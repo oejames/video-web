@@ -1,10 +1,9 @@
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import {
-FaVideo,
+// FaVideo,
 // FaSearch,
 // FaTrash,
 FaFileUpload,
-FaCut,
+// FaCut,
 // FaListAlt,
 // FaFilm,
 FaSpinner
