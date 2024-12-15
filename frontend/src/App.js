@@ -6,7 +6,7 @@ import Tabs from './components/Tabs';
 import TabContent from './components/TabContent';
 import { useVideoProcessing } from './hooks/videoProcessingHooks';
 
-function VideogrepApp() {
+function App() {
   const {
     videos,
     searchQuery,
@@ -83,4 +83,4 @@ function VideogrepApp() {
   );
 }
 
-export default VideogrepApp;
+export default App;
