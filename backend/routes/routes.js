@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-const upload = require('./middleware');
-const videoController = require('./videoController');
+const upload = require('../middleware/middleware');
+const videoController = require('../controllers/videoController');
 const clients = new Set();
 
 
@@ -96,7 +96,8 @@ module.exports = function(app) {
         if (!filename) {
             return res.status(400).send('Filename is required');
         }
-        const videoPath = path.join(__dirname, 'exports', filename);
+        // const videoPath = path.join(__dirname, 'exports', filename);
+        const videoPath = path.join(__dirname, '..', 'controllers', 'exports', filename);
         if (fs.existsSync(videoPath)) {
             res.sendFile(videoPath);
         } else {

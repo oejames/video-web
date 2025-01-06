@@ -1,7 +1,7 @@
 const path = require('path');
 const fs = require('fs');
-const { runPythonProcess } = require('./utils/pythonHelper');
-const { transcribeScript, searchScript, ngramsScript, exportScript } = require('./utils/pythonScripts');
+const { runPythonProcess } = require('../utils/pythonHelper');
+const { transcribeScript, searchScript, ngramsScript, exportScript } = require('../utils/pythonScripts');
 
 async function handleTranscribe(files, onLog) {
     const { result, error } = await runPythonProcess(
