@@ -43,13 +43,5 @@ The application will be available at http://localhost:3000
 5. Drag and drop results to reorder them (when using sentence mode)
 6. Click "Export Supercut" to create a video of your selected segments
 
-## Technical Notes
-
-- Frontend built with React 
-- Backend uses Express.js
-- Python integration via child processes
-- Real-time logging via Server-Sent Events (SSE)
-- File management with Multer
-
 ## License
 ISC License
