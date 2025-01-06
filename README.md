@@ -14,7 +14,6 @@ A web interface for VideoGrep that transcribes videos, searches through transcri
 - Create video supercuts from your search results
 - Analyze word frequencies with N-gram analysis
 - Real-time logs of transcription and export processes
-- Drag and drop interface to reorder supercut segments
 - Preview generated videos in browser
 
 ## Installation
