@@ -14,11 +14,14 @@ A web interface for VideoGrep that allows transcribing videos, searching through
 
 ## Installation
 
-Install dependencies and build frontend:
+Install backend dependencies:
 ```bash
 cd backend
 npm install
 pip install -r requirements.txt
+```
+Set up frontend:
+```bash
 cd ../frontend
 npm install
 npm run build
