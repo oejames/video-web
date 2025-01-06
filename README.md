@@ -2,6 +2,11 @@
 
 A web interface for VideoGrep that transcribes videos, searches through transcripts, and creates supercuts based on search terms. 
 
+<img src="https://github.com/user-attachments/assets/57f25151-2282-4eaa-8e79-eb81841b3de5" alt="image" width="400" />
+
+
+
+
 ## Features
 
 - Upload videos and generate transcripts
