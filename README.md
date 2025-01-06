@@ -40,8 +40,8 @@ The application will be available at http://localhost:3000
 2. Click "Transcribe" to generate transcripts for your videos
 3. Enter search terms and choose whether to search by words or sentences
 4. Click "Search" to find matching video segments
-5. Drag and drop results to reorder them (when using sentence mode)
-6. Click "Export Supercut" to create a video of your selected segments
+5. Edit search results (in sentence mode) to select desired segments
+6. Click "Export Supercut" to create a video of the selected segments
 
 ## License
 ISC License
