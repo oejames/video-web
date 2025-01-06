@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:5000' : '';
@@ -16,6 +16,29 @@ export function useVideoProcessing() {
   const [transcripts, setTranscripts] = useState({});
   const [activeTab, setActiveTab] = useState('search');
   const [exportedVideoPath, setExportedVideoPath] = useState('');
+  const [processLogs, setProcessLogs] = useState([]);
+
+  useEffect(() => {
+    console.log("Setting up EventSource");
+    const eventSource = new EventSource(`${API_URL}/logs`);
+    
+    eventSource.onmessage = (event) => {
+        console.log("Got SSE message:", event.data); 
+        const data = JSON.parse(event.data);
+        setProcessLogs(prev => [...prev, data]);
+    };
+
+    eventSource.onerror = (error) => {  
+      console.error("SSE Error:", error);
+    };
+
+    return () => {
+        eventSource.close();
+        setProcessLogs([]); // Clear logs on cleanup
+    };
+}, []);
+
+
 
   const isResultContained = useCallback((result1, result2) => {
     const normalize = (str) => str.toLowerCase().replace(/\s+/g, ' ').trim();
@@ -73,8 +96,10 @@ export function useVideoProcessing() {
   const handleTranscribe = async () => {
     try {
       setIsLoading(true);
+      setProcessLogs([]);
       const response = await axios.post(`${API_URL}/transcribe`, { files: videos });
       setTranscripts(response.data);
+      setProcessLogs([]);
       setActiveTab('transcripts');
       await handleNGrams(1);
     } catch (error) {
@@ -152,6 +177,8 @@ export function useVideoProcessing() {
     
     try {
       setIsLoading(true);
+      setProcessLogs([]);
+      setActiveTab('video');
       const response = await axios.post(`${API_URL}/export`, {
         files: videos,
         query: exportQuery,
@@ -161,6 +188,7 @@ export function useVideoProcessing() {
       });
      
       setExportedVideoPath(`${API_URL}/test-video?filename=${encodeURIComponent(response.data.output)}`);
+      setProcessLogs([]);
     } catch (error) {
       console.error('Export failed:', error.response || error.message);
       if (error.response) {
@@ -168,7 +196,7 @@ export function useVideoProcessing() {
       }
     } finally {
       setIsLoading(false);
-      setActiveTab('video');
+      // setActiveTab('video');
     }
   };
 
@@ -204,6 +232,7 @@ export function useVideoProcessing() {
 
   return {
     videos,
+    processLogs,
     setVideos,
     searchQuery,
     setSearchQuery,

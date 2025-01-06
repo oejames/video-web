@@ -11,7 +11,8 @@ const TabContent = ({
     handleNGrams,  
     transcripts,  
     exportedVideoPath,
-    searchType
+    searchType,
+    processLogs
   }) => {  
     return (  
      <div className="overflow-auto" style={{ height: '520px' }}>  
@@ -94,6 +95,29 @@ const TabContent = ({
         {activeTab === 'transcripts' && (  
          <div>  
           <h2 className="text-xl font-semibold mb-2">Transcripts</h2>  
+          
+          {console.log("Current processLogs:", processLogs)}
+          
+         { /* Show logs first if they exist */}
+           {/* {processLogs.length > 0 && (
+              <div 
+                  className="mb-4 bg-black rounded p-4 font-mono text-sm overflow-auto" 
+                  style={{ maxHeight: '300px' }}
+                  ref={el => {
+                      if (el) {
+                          el.scrollTop = el.scrollHeight;
+                      }
+                  }}
+              >
+                  {processLogs.map((log, index) => (
+                      <div key={index} className={`${log.type === 'stderr' ? 'text-yellow-400' : 'text-green-400'}`}>
+                          {log.log}
+                      </div>
+                  ))}
+              </div>
+          )} */}
+          
+    
           {Object.entries(transcripts).length > 0 ? (  
             Object.entries(transcripts).map(([file, transcript]) => (  
              <div key={file} className="mb-4">  
@@ -115,6 +139,25 @@ const TabContent = ({
     
         {activeTab === 'video' && (  
          <div className='mt-4'>  
+           {/* Show logs first if they exist */}
+          {processLogs.length > 0 && (
+            <div 
+                className="mb-4 bg-black rounded p-4 font-mono text-sm overflow-auto" 
+                style={{ maxHeight: '300px' }}
+                ref={el => {
+                    if (el) {
+                        el.scrollTop = el.scrollHeight;
+                    }
+                }}
+            >
+                {processLogs.map((log, index) => (
+                    <div key={index} className={`${log.type === 'stderr' ? 'text-yellow-400' : 'text-green-400'}`}>
+                        {log.log}
+                    </div>
+                ))}
+            </div>
+        )}
+
           {exportedVideoPath ? (  
             <video  
              controls  
@@ -124,7 +167,8 @@ const TabContent = ({
              Your browser does not support the video tag.  
             </video>  
           ) : (  
-            <p>Click 'export supercut' to see the finished video</p>  
+            // <p>Click 'export supercut' to see the finished video</p>  
+            <p></p>
           )}  
          </div>  
         )}  

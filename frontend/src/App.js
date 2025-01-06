@@ -9,6 +9,7 @@ import { useVideoProcessing } from './hooks/useVideoProcessing';
 function App() {
   const {
     videos,
+    processLogs,
     searchQuery,
     searchType,
     editableResults,
@@ -74,6 +75,7 @@ function App() {
                 transcripts={transcripts}
                 exportedVideoPath={exportedVideoPath}
                 searchType={searchType}
+                processLogs={processLogs}
               />
             </div>
           </div>
