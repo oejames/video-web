@@ -1,6 +1,6 @@
 # VideoGrep Web Interface
 
-A web interface for VideoGrep that allows transcribing videos, searching through transcripts and creating supercuts based on search terms. 
+A web interface for VideoGrep that transcribes videos, searches through transcripts, and creates supercuts based on search terms. 
 
 ## Features
 
